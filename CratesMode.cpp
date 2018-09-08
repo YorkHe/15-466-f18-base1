@@ -32,39 +32,41 @@ CratesMode::CratesMode() {
 	//set up scene:
 	//TODO: this should load the scene from a file!
 
-	auto attach_object = [this](Scene::Transform *transform, std::string const &name) {
-		Scene::Object *object = scene.new_object(transform);
-		object->program = vertex_color_program->program;
-		object->program_mvp_mat4 = vertex_color_program->object_to_clip_mat4;
-		object->program_mv_mat4x3 = vertex_color_program->object_to_light_mat4x3;
-		object->program_itmv_mat3 = vertex_color_program->normal_to_light_mat3;
-		object->vao = *crates_meshes_for_vertex_color_program;
-		MeshBuffer::Mesh const &mesh = crates_meshes->lookup(name);
-		object->start = mesh.start;
-		object->count = mesh.count;
-		return object;
-	};
+	this->scene = new Scene(data_path("crates.scene"), data_path("crates.pnc"), vertex_color_program.value);
 
-	{ //build some sort of content:
-		//Crate at the origin:
-		Scene::Transform *transform1 = scene.new_transform();
-		transform1->position = glm::vec3(1.0f, 0.0f, 0.0f);
-		attach_object(transform1, "Crate");
-		//smaller crate on top:
-		Scene::Transform *transform2 = scene.new_transform();
-		transform2->set_parent(transform1);
-		transform2->position = glm::vec3(0.0f, 0.0f, 1.5f);
-		transform2->scale = glm::vec3(0.5f);
-		attach_object(transform2, "Crate");
-	}
+//	auto attach_object = [this](Scene::Transform *transform, std::string const &name) {
+//		Scene::Object *object = scene.new_object(transform);
+//		object->program = vertex_color_program->program;
+//		object->program_mvp_mat4 = vertex_color_program->object_to_clip_mat4;
+//		object->program_mv_mat4x3 = vertex_color_program->object_to_light_mat4x3;
+//		object->program_itmv_mat3 = vertex_color_program->normal_to_light_mat3;
+//		object->vao = *crates_meshes_for_vertex_color_program;
+//		MeshBuffer::Mesh const &mesh = crates_meshes->lookup(name);
+//		object->start = mesh.start;
+//		object->count = mesh.count;
+//		return object;
+//	};
 
-	{ //Camera looking at the origin:
-		Scene::Transform *transform = scene.new_transform();
-		transform->position = glm::vec3(0.0f, -10.0f, 1.0f);
-		//Cameras look along -z, so rotate view to look at origin:
-		transform->rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-		camera = scene.new_camera(transform);
-	}
+//	{ //build some sort of content:
+//		//Crate at the origin:
+//		Scene::Transform *transform1 = scene.new_transform();
+//		transform1->position = glm::vec3(1.0f, 0.0f, 0.0f);
+//		attach_object(transform1, "Crate");
+//		//smaller crate on top:
+//		Scene::Transform *transform2 = scene.new_transform();
+//		transform2->set_parent(transform1);
+//		transform2->position = glm::vec3(0.0f, 0.0f, 1.5f);
+//		transform2->scale = glm::vec3(0.5f);
+//		attach_object(transform2, "Crate");
+//	}
+
+//	{ //Camera looking at the origin:
+//		Scene::Transform *transform = scene.new_transform();
+//		transform->position = glm::vec3(0.0f, -10.0f, 1.0f);
+//		//Cameras look along -z, so rotate view to look at origin:
+//		transform->rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+//		camera = scene.new_camera(transform);
+//	}
 }
 
 CratesMode::~CratesMode() {
@@ -152,7 +154,7 @@ void CratesMode::draw(glm::uvec2 const &drawable_size) {
 	//fix aspect ratio of camera
 	camera->aspect = drawable_size.x / float(drawable_size.y);
 
-	scene.draw(camera);
+	scene->draw(camera);
 
 	if (Mode::current.get() == this) {
 		glDisable(GL_DEPTH_TEST);

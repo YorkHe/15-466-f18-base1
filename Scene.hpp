@@ -1,13 +1,14 @@
 #pragma once
 
 #include "GL.hpp"
+#include "vertex_color_program.hpp"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
 #include <vector>
 #include <list>
-#include <functional>
+#include <map>
 
 //"Scene" manages a hierarchy of transformations with, potentially, attached information.
 struct Scene {
@@ -103,10 +104,13 @@ struct Scene {
 	//------ functions to create / destroy scene things -----
 	//NOTE: all scene objects are automatically freed when scene is deallocated
 
+	std::map<int32_t, Transform*> transform_map;
+
 	//Create a new transform:
 	Transform *new_transform();
 	//Delete an existing transform: (NOTE: it is an error to delete a transform with an attached Object or Camera)
 	void delete_transform(Transform *);
+
 
 	//Create a new object attached to a transform:
 	Object *new_object(Transform *transform);
@@ -131,5 +135,6 @@ struct Scene {
 	void draw(Camera const *camera);
 
 
+	Scene(std::string const& scene_filename, std::string const& mesh_filename, const VertexColorProgram* program);
 	~Scene(); //destructor deallocates transforms, objects, cameras
 };

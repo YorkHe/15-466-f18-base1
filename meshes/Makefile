@@ -15,6 +15,8 @@ all : \
 	$(DIST)/meshes.pnc \
 	$(DIST)/crates.pnc \
 	$(DIST)/crates.scene \
+	$(DIST)/phone.pnc\
+	$(DIST)/phone.scene \
 
 $(DIST)/%.p : %.blend export-meshes.py
 	$(BLENDER) --background --python export-meshes.py -- '$<' '$@'

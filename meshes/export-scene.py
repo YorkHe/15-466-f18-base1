@@ -76,6 +76,7 @@ def write_xfh(obj):
 	transform = (world_to_parent * obj.matrix_world).decompose()
 	#print(repr(transform))
 
+	xfh_data += ref
 	xfh_data += parent_ref
 	xfh_data += write_string(obj.name)
 	xfh_data += struct.pack('3f', transform[0].x, transform[0].y, transform[0].z)

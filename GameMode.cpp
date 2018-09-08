@@ -10,6 +10,7 @@
 #include "compile_program.hpp" //helper to compile opengl shader programs
 #include "draw_text.hpp" //helper to... um.. draw text
 #include "vertex_color_program.hpp"
+#include "PhoneMode.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
 
@@ -257,6 +258,9 @@ void GameMode::show_pause_menu() {
 	menu->choices.emplace_back("PAUSED");
 	menu->choices.emplace_back("RESUME", [game](){
 		Mode::set_current(game);
+	});
+	menu->choices.emplace_back("PHONE", [game](){
+		Mode::set_current(std::make_shared<PhoneMode>());
 	});
 	menu->choices.emplace_back("CRATES", [game](){
 		Mode::set_current(std::make_shared< CratesMode >());

@@ -1,9 +1,151 @@
 #include "Scene.hpp"
 
+#include "read_chunk.hpp"
+#include "MeshBuffer.hpp"
+
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
 #include <iostream>
+#include <fstream>
+
+Scene::Scene(std::string const &scene_filename, std::string const &mesh_filename, const VertexColorProgram* program) {
+
+	MeshBuffer const *scene_meshes = new MeshBuffer(mesh_filename);
+
+    std::ifstream file(scene_filename, std::ios::binary);
+
+    std::cerr << "Start to read chunk:" << scene_filename << std::endl;
+    // Read chunk1: str0
+    std::vector< char > strings;
+    read_chunk(file, "str0", &strings);
+
+    std::cerr << "Finish reading str0" << std::endl;
+
+    // Read chunk2: xfh0 (Transform Hierarchy)
+	{
+	    struct XfhEntry {
+	        int32_t ref;
+	        int32_t parent_ref;
+	        uint32_t name_begin, name_end;
+	        glm::vec3 position;
+	        glm::quat rotation;
+	        glm::vec3 scale;
+	    };
+
+		static_assert(sizeof(XfhEntry) == 4+4+4+4+3*4+4*4+3*4, "XfhEntry is packed.");
+
+		std::vector< XfhEntry > data;
+		read_chunk(file, "xfh0", &data);
+
+		for (auto entry : data) {
+		    auto t = new_transform();
+
+		    t->position = entry.position;
+		    t->rotation = entry.rotation;
+		    t->scale = entry.scale;
+
+		    if (entry.parent_ref != -1) {
+				if ((transform_map.find(entry.parent_ref)) != transform_map.end()) {
+					auto parent_transform = transform_map.find(entry.parent_ref)->second;
+					t->set_parent(parent_transform);
+				} else {
+					throw std::runtime_error("referenced parent transform not found");
+				}
+			}
+
+			transform_map[entry.ref] = t;
+		}
+	}
+	std::cerr << "Finish reading xhf0" << std::endl;
+
+	// Read chunk3: msh0 (Meshes)
+
+	{
+		struct MeshEntry {
+		    int32_t ref;
+		    uint32_t name_begin, name_end;
+		};
+
+		static_assert(sizeof(MeshEntry) == 4 + 4 + 4, "MeshEntry is packed");
+
+		std::vector< MeshEntry > data;
+
+		read_chunk(file, "msh0", &data);
+
+		GLuint mesh_vao = scene_meshes->make_vao_for_program(program->program);
+
+		for (auto entry : data) {
+		    if (transform_map.find(entry.ref) != transform_map.end()) {
+		        auto transform = transform_map.find(entry.ref)->second;
+		        auto object = new_object(transform);
+
+		        object->program = program->program;
+		        object->program_mvp_mat4 = program->object_to_clip_mat4;
+		        object->program_mv_mat4x3 = program->object_to_light_mat4x3;
+		        object->program_itmv_mat3 = program->normal_to_light_mat3;
+		        object->vao = mesh_vao;
+
+		        std::string name(&strings[0] + entry.name_begin, &strings[0] + entry.name_end);
+
+		        MeshBuffer::Mesh const &mesh = scene_meshes->lookup(name);
+		        object->start = mesh.start;
+		        object->count = mesh.count;
+		    } else {
+		    	throw std::runtime_error("referenced transform not found");
+		    }
+		}
+	}
+
+	std::cerr << "Finish reading msh0" << std::endl;
+	// Read chunk4: cam0 (Cameras)
+	{
+		struct CameraEntry {
+			int32_t ref;
+			char type[4];
+			glm::float32_t fov;
+			glm::float32_t clip_start, clip_end;
+		};
+
+		static_assert(sizeof(CameraEntry) == 4 + 4 + 4 + 4 + 4, "CameraEntry is packed");
+
+		std::vector< CameraEntry > data;
+
+		read_chunk(file, "cam0", &data);
+
+		for (auto entry : data) {
+		    if (transform_map.find(entry.ref) != transform_map.end()) {
+		        auto transform = transform_map.find(entry.ref)->second;
+				auto camera = new_camera(transform);
+
+				if (strncmp(entry.type, "pers", 4) == 0) {
+				    camera->fovy = entry.fov;
+				}
+				else if (strncmp(entry.type, "orth", 4) == 0){
+				}
+		    } else {
+		        throw std::runtime_error("referenced transform not found");
+		    }
+		}
+	}
+
+	std::cerr << "Finish reading cam0" << std::endl;
+	// Read chunk5: lmp0 (Lamps)
+	{
+	    struct LampEntry {
+	    	int32_t ref;
+	    	char type;
+	    	glm::u8vec3 color;
+	    	glm::float32_t energy;
+	    	glm::float32_t distance;
+	    	glm::float32_t fov;
+	    };
+	}
+
+	std::cerr << "Finish reading lmp0" << std::endl;
+}
+
+
 
 glm::mat4 Scene::Transform::make_local_to_parent() const {
 	return glm::mat4( //translate

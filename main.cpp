@@ -9,6 +9,7 @@
 
 //GL.hpp will include a non-namespace-polluting set of opengl prototypes:
 #include "GL.hpp"
+#include "PhoneMode.hpp"
 
 //Includes for libSDL:
 #include <SDL.h>
@@ -99,7 +100,7 @@ int main(int argc, char **argv) {
 
 	//------------ create game mode + make current --------------
 
-	Mode::set_current(std::make_shared< GameMode >());
+	Mode::set_current(std::make_shared< PhoneMode >());
 
 	//------------ main loop ------------
 

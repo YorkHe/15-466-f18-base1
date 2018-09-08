@@ -41,6 +41,6 @@ struct CratesMode : public Mode {
 
 	bool mouse_captured = false;
 
-	Scene scene;
+	Scene* scene;
 	Scene::Camera *camera = nullptr;
 };
