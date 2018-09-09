@@ -71,7 +71,7 @@ for obj in bpy.data.objects:
     bpy.ops.mesh.quads_convert_to_tris(quad_method='BEAUTY', ngon_method='BEAUTY')
     bpy.ops.object.mode_set(mode='OBJECT')
 
-    mesh.calc_normals_split()
+    mesh.calc_normals()
 
     name_begin = len(strings)
     strings += bytes(name, "utf8")
@@ -86,13 +86,14 @@ for obj in bpy.data.objects:
         for x in vertex.co:
             vertex_data += struct.pack('f', x)
 
+        vertex_data += struct.pack('f', vertex.normal[0])
+        vertex_data += struct.pack('f', vertex.normal[1])
+        vertex_data += struct.pack('f', vertex.normal[2])
+
+
     for poly in mesh.polygons:
         for vertex_index in poly.vertices:
             triangle_data += struct.pack('I', vertex_index)
-
-        triangle_data += struct.pack('f', poly.normal[0])
-        triangle_data += struct.pack('f', poly.normal[1])
-        triangle_data += struct.pack('f', poly.normal[2])
 
 
 blob = open(outfile, 'wb')

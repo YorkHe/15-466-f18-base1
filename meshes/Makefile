@@ -17,6 +17,8 @@ all : \
 	$(DIST)/crates.scene \
 	$(DIST)/phone.pnc\
 	$(DIST)/phone.scene \
+	$(DIST)/phone.wok\
+
 
 $(DIST)/%.p : %.blend export-meshes.py
 	$(BLENDER) --background --python export-meshes.py -- '$<' '$@'
@@ -26,3 +28,7 @@ $(DIST)/%.pnc : %.blend export-meshes.py
 
 $(DIST)/%.scene : %.blend export-scene.py
 	$(BLENDER) --background --python export-scene.py -- '$<' '$@'
+
+
+$(DIST)/%.wok : %.blend export-walkmesh.py
+	$(BLENDER) --background --python export-walkmesh.py -- '$<':3 '$@'

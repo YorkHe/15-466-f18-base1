@@ -12,30 +12,32 @@ WalkMesh::WalkMesh(std::string const &wok_filename) {
 
 
 	//read vertex data
-	static_assert(sizeof(glm::vec3) == 3 * 4, "Vertex is packed");
-
-	std::cerr << "Start reading vec0" << std::endl;
-	read_chunk(file, "vex0", &vertices);
-	std::cerr << "Finished reading vec0" << std::endl;
-
-	struct TriangleEntry {
-		glm::uvec3 indices;
+	struct VertexEntry {
+		glm::vec3 position;
 		glm::vec3 normal;
 	};
+	static_assert(sizeof(VertexEntry) == 3 * 4 + 3 * 4, "Vertex is packed");
 
-    static_assert(sizeof(TriangleEntry) == 3*4 + 3 *4 ,"Triangle is packed");
+	std::vector<VertexEntry> data;
 
-    std::vector < TriangleEntry > triangles;
-    read_chunk(file, "tri0", &triangles);
+	std::cerr << "Start reading vec0" << std::endl;
+	read_chunk(file, "vex0", &data);
+	std::cerr << "Finished reading vec0" << std::endl;
+
+	for (auto vertex : data) {
+		this->vertices.emplace_back(vertex.position);
+		this->vertex_normals.emplace_back(vertex.normal);
+	}
+
+    static_assert(sizeof(glm::uvec3) == 3*4 ,"Triangle is packed");
+
+    read_chunk(file, "tri0", &this->triangles);
 	std::cerr << "Finished reading tri0" << std::endl;
 
     for (auto triangle : triangles) {
-        this->triangles.emplace_back(triangle.indices);
-        this->vertex_normals.emplace_back(triangle.normal);
-
-        auto a = triangle.indices[0];
-		auto b = triangle.indices[1];
-		auto c = triangle.indices[2];
+        auto a = triangle[0];
+		auto b = triangle[1];
+		auto c = triangle[2];
 
 		next_vertex[glm::uvec2(a, b)] = c;
 		next_vertex[glm::uvec2(b, c)] = a;

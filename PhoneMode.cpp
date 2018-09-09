@@ -68,8 +68,19 @@ bool PhoneMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
         }
     }
 
-    SDL_SetRelativeMouseMode(SDL_TRUE);
+//    SDL_SetRelativeMouseMode(SDL_TRUE);
 
+    if (evt.type == SDL_KEYDOWN) {
+        if (evt.key.keysym.scancode == SDL_SCANCODE_ESCAPE) {
+            mouse_captured = !mouse_captured;
+
+            if (mouse_captured) {
+                SDL_SetRelativeMouseMode(SDL_TRUE);
+            } else {
+                SDL_SetRelativeMouseMode(SDL_FALSE);
+            }
+        }
+    }
 
     if (evt.type == SDL_MOUSEMOTION) {
         //Note: float(window_size.y) * camera->fovy is a pixels-to-radians conversion factor
@@ -120,9 +131,15 @@ void PhoneMode::update(float elapsed) {
     glm::vec3 old_player_up = glm::normalize(directions[1]);
     glm::vec3 player_forward = -directions[2];
 
-    print2_vec3("RIGHT", player_right);
-    print2_vec3("UP", old_player_up);
-    print2_vec3("FORWARD", player_forward);
+//    print2_vec3("RIGHT", player_right);
+//    print2_vec3("UP", old_player_up);
+//    print2_vec3("FORWARD", player_forward);
+    print2_vec3("TRI", walk_point.triangle);
+    print2_vec3("NORMAL1", walk_mesh->vertex_normals[walk_point.triangle.x]);
+    print2_vec3("NORMAL2", walk_mesh->vertex_normals[walk_point.triangle.y]);
+    print2_vec3("NORMAL3", walk_mesh->vertex_normals[walk_point.triangle.z]);
+
+
 //
     glm::vec3 w = glm::cross(old_player_up, normal);
 //

@@ -33,4 +33,6 @@ struct PhoneMode : public Mode {
     WalkMesh* walk_mesh;
     WalkMesh::WalkPoint walk_point;
     Scene::Camera *camera = nullptr;
+
+    bool mouse_captured = true;
 };
