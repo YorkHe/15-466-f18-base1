@@ -120,7 +120,7 @@ void PhoneMode::update(float elapsed) {
 
 //    camera->transform->position = walk_mesh->world_point(walk_point);
     glm::vec3 normal = walk_mesh->world_normal(walk_point);
-    glm::vec3 position = walk_mesh->world_point(walk_point) + 2.5f * normal;
+    glm::vec3 position = walk_mesh->world_point(walk_point) + 0.5f * normal;
     camera->transform->position.x = position.x;
     camera->transform->position.y = position.y;
     camera->transform->position.z = position.z;
