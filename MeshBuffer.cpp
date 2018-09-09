@@ -58,7 +58,15 @@ MeshBuffer::MeshBuffer(std::string const &filename) {
 		Position = Attrib(3, GL_FLOAT, GL_FALSE, sizeof(Vertex), offsetof(Vertex, Position));
 		Normal = Attrib(3, GL_FLOAT, GL_FALSE, sizeof(Vertex), offsetof(Vertex, Normal));
 
-	} else if (filename.size() >= 4 && filename.substr(filename.size()-4) == ".pnc") {
+	} else if (filename.size() >= 4 && filename.substr(filename.size() - 4) == ".wok") {
+	    struct Vertex {
+	        glm::vec3 Position;
+	        glm::vec3 Normal;
+	    };
+
+		static_assert(sizeof(Vertex) == 3*4+3*4, "Vertex is packed.");
+	}
+	else if (filename.size() >= 4 && filename.substr(filename.size()-4) == ".pnc") {
 		struct Vertex {
 			glm::vec3 Position;
 			glm::vec3 Normal;

@@ -26,6 +26,7 @@ MeshBuffer::Mesh cursor_mesh;
 MeshBuffer::Mesh doll_mesh;
 MeshBuffer::Mesh egg_mesh;
 MeshBuffer::Mesh cube_mesh;
+MeshBuffer::Mesh walk_mesh;
 
 Load< MeshBuffer > meshes(LoadTagDefault, [](){
 	MeshBuffer const *ret = new MeshBuffer(data_path("meshes.pnc"));

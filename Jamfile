@@ -69,6 +69,7 @@ NAMES =
 	MeshBuffer
 	draw_text
 	PhoneMode
+	WalkMesh
 	;
 
 if $(OS) = NT {

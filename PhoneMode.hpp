@@ -6,6 +6,7 @@
 
 #include "Mode.hpp"
 #include "Scene.hpp"
+#include "WalkMesh.hpp"
 
 struct PhoneMode : public Mode {
     PhoneMode();
@@ -29,5 +30,7 @@ struct PhoneMode : public Mode {
     //------- game state -------
 
     Scene* scene;
+    WalkMesh* walk_mesh;
+    WalkMesh::WalkPoint walk_point;
     Scene::Camera *camera = nullptr;
 };
