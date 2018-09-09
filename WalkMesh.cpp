@@ -217,6 +217,16 @@ void WalkMesh::walk(WalkPoint &wp, glm::vec3 const &step) const {
 
 	std::cerr << "TTTTT" << t << std::endl;
 
+	if (sum_weight.x <= 0 && sum_weight.y <= 0) {
+		sum_weight.x = 0.1;
+	}
+	else if (sum_weight.x <= 0 && sum_weight.z <= 0) {
+		sum_weight.x = 0.1;
+	}
+	else if (sum_weight.y <= 0 && sum_weight.z <= 0) {
+		sum_weight.z = 0.1;
+	}
+
 	if (t >= 1.0f) { //if a triangle edge is not crossed
 		//TODO: wp.weights gets moved by weights_step, nothing else needs to be done.
 		wp.weights += weights_step;
@@ -245,6 +255,8 @@ void WalkMesh::walk(WalkPoint &wp, glm::vec3 const &step) const {
 			edge_b = wp.triangle.x;
 			oppo_vertex = wp.triangle.z;
 		}
+
+
 
 		std::unordered_map<glm::uvec2, uint32_t >::const_iterator got = next_vertex.find(glm::uvec2(edge_a, edge_b));
 
@@ -282,8 +294,8 @@ void WalkMesh::walk(WalkPoint &wp, glm::vec3 const &step) const {
 			std::cerr << std::endl;
 			print_vec3("NEW WEIGHT::::::::::", wp.weights);
 		} else {
+		    wp.weights = wp.weights + 0.02f * weights_step;
 			std::cerr << "NOT FOUND" << std::endl;
-		    wp.weights = sum_weight;
 		}
 
 		//if there is another triangle over the edge:

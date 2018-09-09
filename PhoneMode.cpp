@@ -125,7 +125,6 @@ void PhoneMode::update(float elapsed) {
     camera->transform->position.y = position.y;
     camera->transform->position.z = position.z;
 
-    print2_vec3("NORMAL", normal);
 //
     glm::vec3 player_right = directions[0];
     glm::vec3 old_player_up = glm::normalize(directions[1]);
@@ -134,10 +133,6 @@ void PhoneMode::update(float elapsed) {
 //    print2_vec3("RIGHT", player_right);
 //    print2_vec3("UP", old_player_up);
 //    print2_vec3("FORWARD", player_forward);
-    print2_vec3("TRI", walk_point.triangle);
-    print2_vec3("NORMAL1", walk_mesh->vertex_normals[walk_point.triangle.x]);
-    print2_vec3("NORMAL2", walk_mesh->vertex_normals[walk_point.triangle.y]);
-    print2_vec3("NORMAL3", walk_mesh->vertex_normals[walk_point.triangle.z]);
 
 
 //
@@ -149,23 +144,18 @@ void PhoneMode::update(float elapsed) {
             )
     );
 
-    print2_vec3("W", w);
     player_forward = orientation_change * player_forward ;
 
-    print2_vec3("FORWARD2", player_forward);
-//
     player_forward = glm::normalize(player_forward - normal * glm::dot(normal, player_forward));
-    print2_vec3("FORWARD3", player_forward);
     player_right = glm::cross(player_forward, normal);
-    print2_vec3("RIGHT2", player_right);
-//
+
     auto q = glm::quat_cast(glm::mat3(
             player_right, normal, -player_forward
     ));
 
     camera->transform->rotation = q;
 
-    std::cerr << "Q :" << q.x << "," << q.y << "," << q.z << "," << q.w << std::endl;
+//    std::cerr << "Q :" << q.x << "," << q.y << "," << q.z << "," << q.w << std::endl;
 //
 //    auto q2 = camera->transform->rotation;
 ////

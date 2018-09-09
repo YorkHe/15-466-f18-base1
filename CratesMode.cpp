@@ -42,7 +42,7 @@ CratesMode::CratesMode() {
 	this->scene = new Scene(data_path("crates.scene"), data_path("crates.pnc"), vertex_color_program.value);
 
 	auto attach_object = [this](Scene::Transform *transform, std::string const &name) {
-		Scene::Object *object = scene.new_object(transform);
+		Scene::Object *object = scene->new_object(transform);
 		object->program = vertex_color_program->program;
 		object->program_mvp_mat4 = vertex_color_program->object_to_clip_mat4;
 		object->program_mv_mat4x3 = vertex_color_program->object_to_light_mat4x3;
@@ -56,11 +56,11 @@ CratesMode::CratesMode() {
 
 	{ //build some sort of content:
 		//Crate at the origin:
-		Scene::Transform *transform1 = scene.new_transform();
+		Scene::Transform *transform1 = scene->new_transform();
 		transform1->position = glm::vec3(1.0f, 0.0f, 0.0f);
 		large_crate = attach_object(transform1, "Crate");
 		//smaller crate on top:
-		Scene::Transform *transform2 = scene.new_transform();
+		Scene::Transform *transform2 = scene->new_transform();
 		transform2->set_parent(transform1);
 		transform2->position = glm::vec3(0.0f, 0.0f, 1.5f);
 		transform2->scale = glm::vec3(0.5f);
@@ -68,11 +68,11 @@ CratesMode::CratesMode() {
 	}
 
 	{ //Camera looking at the origin:
-		Scene::Transform *transform = scene.new_transform();
+		Scene::Transform *transform = scene->new_transform();
 		transform->position = glm::vec3(0.0f, -10.0f, 1.0f);
 		//Cameras look along -z, so rotate view to look at origin:
 		transform->rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-		camera = scene.new_camera(transform);
+		camera = scene->new_camera(transform);
 	}
 
 	//start the 'loop' sample playing at the large crate:
