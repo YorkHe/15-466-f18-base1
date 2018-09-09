@@ -70,6 +70,7 @@ NAMES =
 	draw_text
 	PhoneMode
 	WalkMesh
+	Sound
 	;
 
 if $(OS) = NT {

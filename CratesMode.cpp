@@ -2,6 +2,7 @@
 
 #include "MenuMode.hpp"
 #include "Load.hpp"
+#include "Sound.hpp"
 #include "MeshBuffer.hpp"
 #include "gl_errors.hpp" //helper for dumpping OpenGL error messages
 #include "read_chunk.hpp" //helper for reading a vector of structures from a file
@@ -26,6 +27,12 @@ Load< GLuint > crates_meshes_for_vertex_color_program(LoadTagDefault, [](){
 	return new GLuint(crates_meshes->make_vao_for_program(vertex_color_program->program));
 });
 
+Load< Sound::Sample > sample_dot(LoadTagDefault, [](){
+	return new Sound::Sample(data_path("dot.wav"));
+});
+Load< Sound::Sample > sample_loop(LoadTagDefault, [](){
+	return new Sound::Sample(data_path("loop.wav"));
+});
 
 CratesMode::CratesMode() {
 	//----------------
@@ -34,42 +41,46 @@ CratesMode::CratesMode() {
 
 	this->scene = new Scene(data_path("crates.scene"), data_path("crates.pnc"), vertex_color_program.value);
 
-//	auto attach_object = [this](Scene::Transform *transform, std::string const &name) {
-//		Scene::Object *object = scene.new_object(transform);
-//		object->program = vertex_color_program->program;
-//		object->program_mvp_mat4 = vertex_color_program->object_to_clip_mat4;
-//		object->program_mv_mat4x3 = vertex_color_program->object_to_light_mat4x3;
-//		object->program_itmv_mat3 = vertex_color_program->normal_to_light_mat3;
-//		object->vao = *crates_meshes_for_vertex_color_program;
-//		MeshBuffer::Mesh const &mesh = crates_meshes->lookup(name);
-//		object->start = mesh.start;
-//		object->count = mesh.count;
-//		return object;
-//	};
+	auto attach_object = [this](Scene::Transform *transform, std::string const &name) {
+		Scene::Object *object = scene.new_object(transform);
+		object->program = vertex_color_program->program;
+		object->program_mvp_mat4 = vertex_color_program->object_to_clip_mat4;
+		object->program_mv_mat4x3 = vertex_color_program->object_to_light_mat4x3;
+		object->program_itmv_mat3 = vertex_color_program->normal_to_light_mat3;
+		object->vao = *crates_meshes_for_vertex_color_program;
+		MeshBuffer::Mesh const &mesh = crates_meshes->lookup(name);
+		object->start = mesh.start;
+		object->count = mesh.count;
+		return object;
+	};
 
-//	{ //build some sort of content:
-//		//Crate at the origin:
-//		Scene::Transform *transform1 = scene.new_transform();
-//		transform1->position = glm::vec3(1.0f, 0.0f, 0.0f);
-//		attach_object(transform1, "Crate");
-//		//smaller crate on top:
-//		Scene::Transform *transform2 = scene.new_transform();
-//		transform2->set_parent(transform1);
-//		transform2->position = glm::vec3(0.0f, 0.0f, 1.5f);
-//		transform2->scale = glm::vec3(0.5f);
-//		attach_object(transform2, "Crate");
-//	}
+	{ //build some sort of content:
+		//Crate at the origin:
+		Scene::Transform *transform1 = scene.new_transform();
+		transform1->position = glm::vec3(1.0f, 0.0f, 0.0f);
+		large_crate = attach_object(transform1, "Crate");
+		//smaller crate on top:
+		Scene::Transform *transform2 = scene.new_transform();
+		transform2->set_parent(transform1);
+		transform2->position = glm::vec3(0.0f, 0.0f, 1.5f);
+		transform2->scale = glm::vec3(0.5f);
+		small_crate = attach_object(transform2, "Crate");
+	}
 
-//	{ //Camera looking at the origin:
-//		Scene::Transform *transform = scene.new_transform();
-//		transform->position = glm::vec3(0.0f, -10.0f, 1.0f);
-//		//Cameras look along -z, so rotate view to look at origin:
-//		transform->rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
-//		camera = scene.new_camera(transform);
-//	}
+	{ //Camera looking at the origin:
+		Scene::Transform *transform = scene.new_transform();
+		transform->position = glm::vec3(0.0f, -10.0f, 1.0f);
+		//Cameras look along -z, so rotate view to look at origin:
+		transform->rotation = glm::angleAxis(glm::radians(90.0f), glm::vec3(1.0f, 0.0f, 0.0f));
+		camera = scene.new_camera(transform);
+	}
+
+	//start the 'loop' sample playing at the large crate:
+	loop = sample_loop->play(large_crate->transform->position, 1.0f, Sound::Loop);
 }
 
 CratesMode::~CratesMode() {
+	if (loop) loop->stop();
 }
 
 bool CratesMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
@@ -134,6 +145,25 @@ void CratesMode::update(float elapsed) {
 	if (controls.left) camera->transform->position -= amt * directions[0];
 	if (controls.backward) camera->transform->position += amt * directions[2];
 	if (controls.forward) camera->transform->position -= amt * directions[2];
+
+	{ //set sound positions:
+		glm::mat4 cam_to_world = camera->transform->make_local_to_world();
+		Sound::listener.set_position( cam_to_world[3] );
+		//camera looks down -z, so right is +x:
+		Sound::listener.set_right( glm::normalize(cam_to_world[0]) );
+
+		if (loop) {
+			glm::mat4 large_crate_to_world = large_crate->transform->make_local_to_world();
+			loop->set_position( large_crate_to_world * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f) );
+		}
+	}
+
+	dot_countdown -= elapsed;
+	if (dot_countdown <= 0.0f) {
+		dot_countdown = (rand() / float(RAND_MAX) * 2.0f) + 0.5f;
+		glm::mat4x3 small_crate_to_world = small_crate->transform->make_local_to_world();
+		sample_dot->play( small_crate_to_world * glm::vec4(0.0f, 0.0f, 0.0f, 1.0f) );
+	}
 }
 
 void CratesMode::draw(glm::uvec2 const &drawable_size) {
