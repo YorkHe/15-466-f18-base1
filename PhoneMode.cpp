@@ -10,6 +10,7 @@
 #include "data_path.hpp"
 #include "vertex_color_program.hpp"
 #include "gl_errors.hpp"
+#include "MenuMode.hpp"
 
 #include "draw_text.hpp"
 
@@ -24,6 +25,15 @@ Load <Sound::Sample> sample_ringtone(LoadTagDefault, [](){
 Load <Sound::Sample> sample_bgm(LoadTagDefault, [](){
     return new Sound::Sample(data_path("space.wav"));
 });
+
+Load <Sound::Sample> sample_beep(LoadTagDefault, [](){
+    return new Sound::Sample(data_path("beep.wav"));
+});
+
+Load <Sound::Sample> sample_alien(LoadTagDefault, [](){
+    return new Sound::Sample(data_path("alien.wav"));
+});
+
 
 PhoneMode::PhoneMode() {
     this->scene = new Scene(
@@ -80,7 +90,10 @@ PhoneMode::PhoneMode() {
     walk_point = this->walk_mesh->start(glm::vec3(0.0f, 0.0f, 1.5f));
 
     bgm = sample_bgm->play(camera->transform->position, 1.0f, Sound::Loop);
-    sample_ringtone->play(glm::vec3(0.0f, 3.0f, 0.0f), 1.0f, Sound::Loop);
+    srand((unsigned)time(nullptr));
+    current_ringing_phone = rand() % 4;
+
+    ringtone = sample_ringtone->play(phone_list[current_ringing_phone]->transform->position, 1.0f, Sound::Loop);
 }
 
 PhoneMode::~PhoneMode() {
@@ -121,6 +134,50 @@ bool PhoneMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
                 SDL_SetRelativeMouseMode(SDL_FALSE);
             }
         }
+
+        if (evt.key.keysym.scancode == SDL_SCANCODE_F) {
+            if (interact_available) {
+
+                if (interact_phone == current_ringing_phone) {
+                    if (ringtone) ringtone->stop();
+                    if (current_phone_sound) current_phone_sound->stop();
+                    current_phone_sound = sample_alien->play(phone_list[interact_phone]->transform->position, 1.0f, Sound::Once);
+
+                    float height = 0.06f;
+                    int r;
+                    if (current_status == BEFORE_ANSWER) {
+                        r = rand() % 2;
+                        if (r == 0) current_mode = CHECK; else current_mode = REDIRECT;
+                        switch(current_mode) {
+                            case CHECK:
+                                phone_message = "NOTHING JUST CHECKING";
+                                phone_message_width = text_width(phone_message, height);
+                                pass++;
+                                current_status = AFTER_ANSWER;
+                                break;
+                            case REDIRECT:
+                                while (redirect_target == -1 || redirect_target == current_ringing_phone) redirect_target = rand() % 4;
+                                answer_words = rand() % 5;
+
+                                phone_message= "GO TO " + PHONE_COLORS[redirect_target] + " PHONE AND SAY " + ANSWER_WORDS[answer_words] + "";
+
+                                phone_message_width = text_width(phone_message, height);
+                                current_status = BEFORE_REDIRECT;
+                                break;
+                        }
+                    }
+                } else {
+                    if (interact_phone == redirect_target && current_status == BEFORE_REDIRECT) {
+                        current_status = AFTER_REDIRECT;
+                        show_answer_menu();
+                    } else {
+                        strike++;
+                        if (current_phone_sound) current_phone_sound->stop();
+                        current_phone_sound = sample_beep->play(phone_list[interact_phone]->transform->position, 1.0f, Sound::Loop);
+                    }
+                }
+            }
+        }
     }
 
     if (evt.type == SDL_MOUSEMOTION) {
@@ -140,9 +197,50 @@ bool PhoneMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size
     return false;
 }
 void print2_vec3(const std::string name, glm::vec3 vec) {
-	std::cerr << name << ":" << vec.x << "," << vec.y << "," << vec.z << std::endl;
+    std::cerr << name << ":" << vec.x << "," << vec.y << "," << vec.z << std::endl;
 }
 void PhoneMode::update(float elapsed) {
+
+    std::cerr << "current" << current_status << std::endl;
+
+    if (game_clear || game_over) return;
+
+    if (current_status == AFTER_ANSWER) {
+
+        current_status = BEFORE_ANSWER;
+
+        int old_ringing_phone = current_ringing_phone;
+        while(current_ringing_phone == old_ringing_phone) current_ringing_phone = rand() % 4;
+
+        ringtone = sample_ringtone->play(phone_list[current_ringing_phone]->transform->position, 1.0f, Sound::Loop);
+    }
+
+    if (current_status == AFTER_REDIRECT && answered) {
+        std::cerr << chose_word << ":::" << ANSWER_WORDS[answer_words] << std::endl;
+        if (chose_word == ANSWER_WORDS[answer_words]) {
+            std::cerr << "PASS!" << std::endl;
+            pass++;
+        } else {
+            std::cerr << "STRIKE!" << std::endl;
+            strike++;
+        }
+
+        current_status = BEFORE_ANSWER;
+
+        int old_ringing_phone = current_ringing_phone;
+        while(current_ringing_phone == old_ringing_phone) current_ringing_phone = rand() % 4;
+
+        ringtone = sample_ringtone->play(phone_list[current_ringing_phone]->transform->position, 1.0f, Sound::Loop);
+    }
+
+    if (pass >= 5) {
+        game_clear = true;
+    }
+
+    if (strike > 3) {
+        game_over = true;
+    }
+
     glm::mat3 directions = glm::mat3_cast(camera->transform->rotation);
     float amt = 5.0f * elapsed;
 
@@ -181,7 +279,7 @@ void PhoneMode::update(float elapsed) {
 //
     glm::quat orientation_change= glm::normalize(
             glm::quat(
-                   glm::dot(old_player_up, normal), w.x, w.y, w.z
+                    glm::dot(old_player_up, normal), w.x, w.y, w.z
             )
     );
 
@@ -209,10 +307,19 @@ void PhoneMode::update(float elapsed) {
 
 
     interact_available = false;
-    for (auto phone : phone_list) {
-        std::cerr << glm::distance(phone->transform->position, camera->transform->position) << std::endl;
+    interact_phone = 0;
+    for (int i = 0; i < phone_list.size(); i++) {
+        auto phone = phone_list[i];
         if (glm::distance(phone->transform->position, camera->transform->position) < 1.5f) {
             interact_available = true;
+            interact_phone = i;
+        }
+    }
+
+    if (!interact_available) {
+        if(current_phone_sound) {
+            current_phone_sound->stop();
+            current_phone_sound = nullptr;
         }
     }
 
@@ -256,16 +363,82 @@ void PhoneMode::draw(glm::uvec2 const &drawable_size) {
     scene->draw(camera);
 
     if (Mode::current.get() == this) {
-        if (interact_available) {
-            std::cerr << "GET PHONE!" << std::endl;
+
+        for (int i = 0; i < strike; i++) {
+            std::string c = "X";
+            float height = 0.04f;
+            float width = text_width(c, height);
+            draw_text(c, glm::vec2(0.95 - (width + 0.02) * i, 0.89f), height, glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+        }
+
+        for (int i = 0; i < pass; i++) {
+            std::string c = "O";
+            float height = 0.04f;
+            float width = text_width(c, height);
+            draw_text(c, glm::vec2(0.95 - (width + 0.02) * i, 0.80f), height, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+        }
+
+        if (game_over) {
+            std::string message = "GAME OVER";
+            float height = 0.18f;
+            float width = text_width(message, height);
+            draw_text(message, glm::vec2(-0.5f * width, 0.0f), height, glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+            draw_text(message, glm::vec2(-0.5f * width, -0.01f), height, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+
+            message = "NOW YOU CAN FINALLY CLOSE THIS BORING GAME";
+            height = 0.04f;
+            width = text_width(message, height);
+            draw_text(message, glm::vec2(-0.5f * width, -0.6f), height, glm::vec4(0.0f, 0.0f, 0.0f, 0.6f));
+            draw_text(message, glm::vec2(-0.5f * width, -0.61f), height, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+        }
+
+        else if (game_clear) {
+            std::string message = "GAME CLEAR";
+            float height = 0.18f;
+            float width = text_width(message, height);
+            draw_text(message, glm::vec2(-0.5f * width, 0.0f), height, glm::vec4(0.0f, 1.0f, 0.0f, 1.0f));
+            draw_text(message, glm::vec2(-0.5f * width, -0.01f), height, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+
+            message = "NOW YOU CAN FINALLY CLOSE THIS BORING GAME";
+            height = 0.04f;
+            width = text_width(message, height);
+            draw_text(message, glm::vec2(-0.5f * width, -0.6f), height, glm::vec4(0.0f, 0.0f, 0.0f, 0.6f));
+            draw_text(message, glm::vec2(-0.5f * width, -0.61f), height, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+        }
+
+        else if (interact_available) {
             float height = 0.06f;
             float width = text_width("PRESS F TO INTERACT", height);
             draw_text("PRESS F TO INTERACT", glm::vec2(-0.5f * width, -0.59f), height, glm::vec4(0.0f, 0.0f, 0.0f, 0.5f));
             draw_text("PRESS F TO INTERACT", glm::vec2(-0.5f * width, -0.6f), height, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+
+            if (phone_message_width != 0) {
+                draw_text(phone_message, glm::vec2(-0.5f * phone_message_width, -0.5f), height, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+            }
+        } else {
+            phone_message_width = 0;
         }
     }
 
     GL_ERRORS();
+}
+
+void PhoneMode::show_answer_menu() {
+    std::shared_ptr< MenuMode > menu = std::make_shared<MenuMode>();
+
+    std::shared_ptr<Mode> game = shared_from_this();
+    menu->background  = game;
+    answered = false;
+    for (auto word : ANSWER_WORDS) {
+        menu->choices.emplace_back(word, [word, game, this](){
+            chose_word = word;
+            Mode::set_current(game);
+            answered = true;
+        });
+    }
+
+    menu->selected = 1;
+    Mode::set_current(menu);
 }
 
 void PhoneMode::show_pause_menu() {
