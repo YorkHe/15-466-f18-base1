@@ -7,6 +7,7 @@
 #include "Mode.hpp"
 #include "Scene.hpp"
 #include "WalkMesh.hpp"
+#include "Sound.hpp"
 
 struct PhoneMode : public Mode {
     PhoneMode();
@@ -35,4 +36,9 @@ struct PhoneMode : public Mode {
     Scene::Camera *camera = nullptr;
 
     bool mouse_captured = true;
+    bool interact_available = false;
+
+    std::shared_ptr< Sound::PlayingSample > bgm;
+
+    std::vector<Scene::Object*> phone_list;
 };

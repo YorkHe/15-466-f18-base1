@@ -84,6 +84,7 @@ Scene::Scene(std::string const &scene_filename, std::string const &mesh_filename
 		        object->program_mvp_mat4 = program->object_to_clip_mat4;
 		        object->program_mv_mat4x3 = program->object_to_light_mat4x3;
 		        object->program_itmv_mat3 = program->normal_to_light_mat3;
+		        object->program_override_color_vec4 = program->override_color_vec4;
 		        object->vao = mesh_vao;
 
 		        std::string name(&strings[0] + entry.name_begin, &strings[0] + entry.name_end);
@@ -91,6 +92,7 @@ Scene::Scene(std::string const &scene_filename, std::string const &mesh_filename
 		        MeshBuffer::Mesh const &mesh = scene_meshes->lookup(name);
 		        object->start = mesh.start;
 		        object->count = mesh.count;
+		        object->name = name;
 		    } else {
 		    	throw std::runtime_error("referenced transform not found");
 		    }
@@ -329,6 +331,10 @@ void Scene::draw(Scene::Camera const *camera) {
 		}
 		if (object->program_itmv_mat3 != -1U) {
 			glUniformMatrix3fv(object->program_itmv_mat3, 1, GL_FALSE, glm::value_ptr(itmv));
+		}
+
+		if (object->program_override_color_vec4 != -1U) {
+			glUniform4fv(object->program_override_color_vec4, 1, glm::value_ptr(glm::vec4(0.0f, 0.0f, 0.0f, -1.0f)));
 		}
 
 		if (object->set_uniforms) object->set_uniforms();

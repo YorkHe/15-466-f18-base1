@@ -14,6 +14,7 @@ struct VertexColorProgram {
 	GLuint sun_color_vec3 = -1U;
 	GLuint sky_direction_vec3 = -1U;
 	GLuint sky_color_vec3 = -1U;
+	GLuint override_color_vec4 = -1U;
 
 	VertexColorProgram();
 };

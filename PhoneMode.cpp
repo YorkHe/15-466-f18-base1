@@ -1,6 +1,7 @@
 //
 // Created by 何宇 on 2018/9/7.
 //
+#include "GL.hpp"
 
 #include <glm/gtc/type_ptr.hpp>
 #include "PhoneMode.hpp"
@@ -10,13 +11,50 @@
 #include "vertex_color_program.hpp"
 #include "gl_errors.hpp"
 
+#include "draw_text.hpp"
+
 #include <iostream>
+
+
+
+Load <Sound::Sample> sample_ringtone(LoadTagDefault, [](){
+    return new Sound::Sample(data_path("ringtone.wav"));
+});
+
+Load <Sound::Sample> sample_bgm(LoadTagDefault, [](){
+    return new Sound::Sample(data_path("space.wav"));
+});
 
 PhoneMode::PhoneMode() {
     this->scene = new Scene(
             data_path("phone.scene"),
             data_path("phone.pnc"),
             vertex_color_program.value);
+
+    for (auto i = scene->first_object; i != nullptr; i = i->alloc_next) {
+        if (i->name == "Phone") {
+            phone_list.emplace_back(i);
+            std::cerr << i->name << std::endl;
+        }
+    }
+
+    assert(phone_list.size() == 4 && "There should be 4 phones in the scene");
+
+    phone_list[0]->set_uniforms = [this](){
+        glUniform4fv(phone_list[0]->program_override_color_vec4, 1, glm::value_ptr(glm::vec4(0.0f, 1.0f, 0.0f, 1.0f)));
+    };
+
+    phone_list[1]->set_uniforms = [this](){
+        glUniform4fv(phone_list[1]->program_override_color_vec4, 1, glm::value_ptr(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f)));
+    };
+
+    phone_list[2]->set_uniforms = [this](){
+        glUniform4fv(phone_list[2]->program_override_color_vec4, 1, glm::value_ptr(glm::vec4(0.0f, 0.0f, 1.0f, 1.0f)));
+    };
+
+    phone_list[3]->set_uniforms = [this](){
+        glUniform4fv(phone_list[3]->program_override_color_vec4, 1, glm::value_ptr(glm::vec4(1.0f, 0.0f, 1.0f, 1.0f)));
+    };
 
     camera = scene->first_camera;
 
@@ -41,9 +79,12 @@ PhoneMode::PhoneMode() {
 
     walk_point = this->walk_mesh->start(glm::vec3(0.0f, 0.0f, 1.5f));
 
+    bgm = sample_bgm->play(camera->transform->position, 1.0f, Sound::Loop);
+    sample_ringtone->play(glm::vec3(0.0f, 3.0f, 0.0f), 1.0f, Sound::Loop);
 }
 
 PhoneMode::~PhoneMode() {
+    if (bgm) bgm->stop();
 }
 
 bool PhoneMode::handle_event(SDL_Event const &evt, glm::uvec2 const &window_size) {
@@ -155,6 +196,26 @@ void PhoneMode::update(float elapsed) {
 
     camera->transform->rotation = q;
 
+    {
+        glm::mat4 cam_to_world = camera->transform->make_local_to_world();
+        Sound::listener.set_position(cam_to_world[3]);
+
+        Sound::listener.set_right(glm::normalize(cam_to_world[0]));
+
+        if (bgm) {
+            bgm->set_position(cam_to_world[3]);
+        }
+    }
+
+
+    interact_available = false;
+    for (auto phone : phone_list) {
+        std::cerr << glm::distance(phone->transform->position, camera->transform->position) << std::endl;
+        if (glm::distance(phone->transform->position, camera->transform->position) < 1.5f) {
+            interact_available = true;
+        }
+    }
+
 //    std::cerr << "Q :" << q.x << "," << q.y << "," << q.z << "," << q.w << std::endl;
 //
 //    auto q2 = camera->transform->rotation;
@@ -193,6 +254,16 @@ void PhoneMode::draw(glm::uvec2 const &drawable_size) {
     camera->aspect = drawable_size.x / float(drawable_size.y);
 
     scene->draw(camera);
+
+    if (Mode::current.get() == this) {
+        if (interact_available) {
+            std::cerr << "GET PHONE!" << std::endl;
+            float height = 0.06f;
+            float width = text_width("PRESS F TO INTERACT", height);
+            draw_text("PRESS F TO INTERACT", glm::vec2(-0.5f * width, -0.59f), height, glm::vec4(0.0f, 0.0f, 0.0f, 0.5f));
+            draw_text("PRESS F TO INTERACT", glm::vec2(-0.5f * width, -0.6f), height, glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+        }
+    }
 
     GL_ERRORS();
 }

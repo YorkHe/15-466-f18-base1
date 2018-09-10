@@ -8,6 +8,7 @@ VertexColorProgram::VertexColorProgram() {
 		"uniform mat4 object_to_clip;\n"
 		"uniform mat4x3 object_to_light;\n"
 		"uniform mat3 normal_to_light;\n"
+		"uniform vec4 override_color;\n"
 		"layout(location=0) in vec4 Position;\n" //note: layout keyword used to make sure that the location-0 attribute is always bound to something
 		"in vec3 Normal;\n"
 		"in vec4 Color;\n"
@@ -18,7 +19,11 @@ VertexColorProgram::VertexColorProgram() {
 		"	gl_Position = object_to_clip * Position;\n"
 		"	position = object_to_light * Position;\n"
 		"	normal = normal_to_light * Normal;\n"
-		"	color = Color;\n"
+		"   if (override_color == vec4(0.0, 0.0, 0.0, -1.0)){\n"
+		"	   color = Color;\n"
+        "   } else {\n"
+		"      color = override_color;\n"
+		"   }\n"
 		"}\n"
 		,
 		"#version 330\n"
@@ -51,10 +56,12 @@ VertexColorProgram::VertexColorProgram() {
 	object_to_light_mat4x3 = glGetUniformLocation(program, "object_to_light");
 	normal_to_light_mat3 = glGetUniformLocation(program, "normal_to_light");
 
+
 	sun_direction_vec3 = glGetUniformLocation(program, "sun_direction");
 	sun_color_vec3 = glGetUniformLocation(program, "sun_color");
 	sky_direction_vec3 = glGetUniformLocation(program, "sky_direction");
 	sky_color_vec3 = glGetUniformLocation(program, "sky_color");
+	override_color_vec4 = glGetUniformLocation(program, "override_color");
 }
 
 Load< VertexColorProgram > vertex_color_program(LoadTagInit, [](){

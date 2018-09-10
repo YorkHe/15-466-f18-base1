@@ -6,6 +6,7 @@
 #include <glm/glm.hpp>
 #include <glm/gtc/quaternion.hpp>
 
+#include <string>
 #include <vector>
 #include <list>
 #include <map>
@@ -57,6 +58,7 @@ struct Scene {
 
 	//"Object"s contain information needed to render meshes:
 	struct Object {
+	    std::string name;
 		Transform *transform; //objects must be attached to transforms.
 		Object(Transform *transform_) : transform(transform_) {
 			assert(transform);
@@ -67,6 +69,7 @@ struct Scene {
 		GLuint program_mvp_mat4 = -1U; //uniform index for object-to-clip matrix (mat4)
 		GLuint program_mv_mat4x3 = -1U; //uniform index for model-to-lighting-space matrix (mat4x3)
 		GLuint program_itmv_mat3 = -1U; //uniform index for normal-to-lighting-space matrix (mat3)
+		GLuint program_override_color_vec4 = -1U; //uniform for overriding object color
 
 		//material info:
 		std::function< void() > set_uniforms; //will be called before rendering object, use to set material parameters (e.g. glossiness)
