@@ -9,14 +9,20 @@ Screen Shot:
 
 ![Screen Shot](screenshot.png)
 
-How To Play:
+**How To Play:**
 
 Same as described in the documentation.
+
 Player can press escape key to catch the mouse pointer, so it won't move out of the window during game.
 
-Changes From The Design Document:
+**Changes From The Design Document:**
 
 I added some sound effects to make the game more playable.
+
+
+**Good Code**
+
+I think the scene loading part of the code is quite good. The loading work is put within the constructor of the Scene class, and it can be done with only a constructor call.
 
 
 # Using This Base Code
