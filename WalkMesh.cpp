@@ -47,7 +47,6 @@ WalkMesh::WalkMesh(std::string const &wok_filename) {
 
 // Referenced from https://www.gamedev.net/forums/topic/552906-closest-point-on-triangle/
 // https://www.geometrictools.com/Documentation/DistancePoint3Triangle3.pdf
-
 glm::vec3 closestPointOnTriangle(const glm::vec3& vertex_a, const glm::vec3& vertex_b, const glm::vec3& vertex_c, const glm::vec3 postion) {
 
 	glm::vec3 edge0 = vertex_b - vertex_a;
@@ -121,11 +120,6 @@ glm::vec3 closestPointOnTriangle(const glm::vec3& vertex_a, const glm::vec3& ver
 }
 
 
-WalkMesh::WalkMesh(std::vector< glm::vec3 > const &vertices_, std::vector< glm::uvec3 > const &triangles_)
-	: vertices(vertices_), triangles(triangles_) {
-	//TODO: construct next_vertex map
-}
-
 // Referenced from: https://gamedev.stackexchange.com/questions/23743/whats-the-most-efficient-way-to-find-barycentric-coordinates
 // http://realtimecollisiondetection.net/
 glm::vec3 calculate_barycentric_coord(glm::vec3 vertex_a, glm::vec3 vertex_b, glm::vec3 vertex_c, glm::vec3 point) {
@@ -146,10 +140,6 @@ glm::vec3 calculate_barycentric_coord(glm::vec3 vertex_a, glm::vec3 vertex_b, gl
     float u = 1.0f - v - w;
 
     return glm::vec3(u,v,w);
-}
-
-void print_vec3(const std::string name, glm::vec3 vec) {
-	std::cerr << name << ":" << vec.x << "," << vec.y << "," << vec.z << std::endl;
 }
 
 WalkMesh::WalkPoint WalkMesh::start(glm::vec3 const &world_point) const {
@@ -173,39 +163,24 @@ WalkMesh::WalkPoint WalkMesh::start(glm::vec3 const &world_point) const {
 	    }
 	}
 
-//	print_vec3("TRIANGLE", closest.triangle);
-//	print_vec3("WEIGHT", closest.weights);
 	return closest;
 }
 
 
 void WalkMesh::walk(WalkPoint &wp, glm::vec3 const &step) const {
-	//TODO: project step to barycentric coordinates to get weights_step
-//	std::cerr << "STEP" << step.x << "," << step.y << "," << step.z << std::endl;
 	glm::vec3 weights_step;
 
 	auto &vertex_a = this->vertices[wp.triangle[0]];
 	auto &vertex_b = this->vertices[wp.triangle[1]];
 	auto &vertex_c = this->vertices[wp.triangle[2]];
 
-//	print_vec3("VA", vertex_a);
-//	print_vec3("VB", vertex_b);
-//	print_vec3("VC", vertex_c);
-//	print_vec3("triangle", wp.triangle);
-//	print_vec3("weight", wp.weights);
-
 	auto old_point= vertex_a * wp.weights.x + vertex_b * wp.weights.y + vertex_c * wp.weights.z;
-//	print_vec3("OLDPOINT", old_point);
 	auto new_point = old_point + step;
-//	print_vec3("NEWPOINT", new_point);
 
-//	auto project_point = closestPointOnTriangle(vertex_a, vertex_b, vertex_c, new_point);
 	auto barycoord  = calculate_barycentric_coord(vertex_a, vertex_b, vertex_c, new_point);
 
 	weights_step = barycoord - wp.weights;
-//	std::cerr << "WSTEP" << weights_step.x << "," << weights_step.y << "," << weights_step.z << std::endl;
 
-	//TODO: when does wp.weights + t * weights_step cross a triangle edge?
 	float t = 0.0f;
 
 	glm::vec3 sum_weight = wp.weights;
@@ -214,8 +189,6 @@ void WalkMesh::walk(WalkPoint &wp, glm::vec3 const &step) const {
 		t += 0.1;
 	    sum_weight = wp.weights + t * weights_step;
 	}
-
-//	std::cerr << "TTTTT" << t << std::endl;
 
 	if (sum_weight.x <= 0 && sum_weight.y <= 0) {
 		sum_weight.x = 0.1;
@@ -228,10 +201,8 @@ void WalkMesh::walk(WalkPoint &wp, glm::vec3 const &step) const {
 	}
 
 	if (t >= 1.0f) { //if a triangle edge is not crossed
-		//TODO: wp.weights gets moved by weights_step, nothing else needs to be done.
 		wp.weights += weights_step;
 	} else { //if a triangle edge is crossed
-		//TODO: wp.weights gets moved to triangle edge, and step gets reduced
 
 		uint32_t edge_a;
 		uint32_t edge_b;
@@ -260,14 +231,7 @@ void WalkMesh::walk(WalkPoint &wp, glm::vec3 const &step) const {
 
 		std::unordered_map<glm::uvec2, uint32_t >::const_iterator got = next_vertex.find(glm::uvec2(edge_a, edge_b));
 
-//		std::cerr << "EDGE A:" << edge_a << " EDGE B:" << edge_b << std::endl;
-
 		if (got != next_vertex.end()) {
-//		    std::cerr << "GOT" << got->second << std::endl;
-//		    wp.triangle[0] = edge_a;
-//		    wp.triangle[1] = edge_b;
-//		    wp.triangle[2] = got->second;
-
 			sum_weight += weights_step * 0.2f;
 
 			auto &vertex_a = this->vertices[wp.triangle[0]];
@@ -291,18 +255,8 @@ void WalkMesh::walk(WalkPoint &wp, glm::vec3 const &step) const {
 
 			wp.weights = barycoord;
 
-//			std::cerr << std::endl;
-//			print_vec3("NEW WEIGHT::::::::::", wp.weights);
 		} else {
 		    wp.weights = wp.weights + 0.02f * weights_step;
-//			std::cerr << "NOT FOUND" << std::endl;
 		}
-
-		//if there is another triangle over the edge:
-			//TODO: wp.triangle gets updated to adjacent triangle
-			//TODO: step gets rotated over the edge
-		//else if there is no other triangle over the edge:
-			//TODO: wp.triangle stays the same.
-			//TODO: step gets updated to slide along the edge
 	}
 }
