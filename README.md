@@ -22,7 +22,7 @@ I added some sound effects to make the game more playable.
 
 **Good Code**
 
-I think the scene loading part of the code is quite good. The loading work is put within the constructor of the Scene class, and it can be done with only a constructor call.
+I think the scene loading part of the code is quite good. The loading work is put within the constructor of the Scene class, and it can be done by only a constructor call.
 
 
 # Using This Base Code
