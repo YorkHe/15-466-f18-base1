@@ -1,11 +1,9 @@
 # Game Information
-(Note: fill in this portion with information about your game.)
+Title: Another Infinite Night at the Orbital Phone Bank
 
-Title: (TODO: your game's title)
+Author: Yu He (yuhe)
 
-Author: (TODO: your name)
-
-Design Document: [TODO: name of design document](TODO: link to design document)
+Design Document: [Another Infinite Night at the Orbital Phone Bank](http://graphics.cs.cmu.edu/courses/15-466-f18/game1-designs/default/)
 
 Screen Shot:
 
@@ -13,15 +11,13 @@ Screen Shot:
 
 How To Play:
 
-TODO: describe the controls and (if needed) goals/strategy.
+Same as described in the documentation.
+Player can press escape key to catch the mouse pointer, so it won't move out of the window during game.
 
 Changes From The Design Document:
 
-TODO: what did you need to add/remove/modify from the original design? Why?
+I added some sound effects to make the game more playable.
 
-Good / Bad / Ugly Code:
-
-TODO: provide examples of code you wrote from this project that you think is good (elegant, simple, useful), bad (hack-y, brittle, unreadable), and ugly (particularly inelegant). Provide a sentence or two of justification for the examples.
 
 # Using This Base Code
 
