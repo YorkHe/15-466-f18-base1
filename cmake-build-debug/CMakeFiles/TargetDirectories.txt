@@ -1,3 +1,0 @@
-/Users/york/GoogleDrive/CMU/2018-Fall/15-666/Game1/15-466-f18-base1/cmake-build-debug/CMakeFiles/rebuild_cache.dir
-/Users/york/GoogleDrive/CMU/2018-Fall/15-666/Game1/15-466-f18-base1/cmake-build-debug/CMakeFiles/edit_cache.dir
-/Users/york/GoogleDrive/CMU/2018-Fall/15-666/Game1/15-466-f18-base1/cmake-build-debug/CMakeFiles/main.dir
